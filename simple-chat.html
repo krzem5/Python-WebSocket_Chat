@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Simple WebSocket chat</title>
+		<script type="text/javascript">
+			var pr,chat,socket
+			function init(){
+				pr=document.querySelectorAll(".wr")[0]
+				chat=document.querySelectorAll(".chat")[0]
+				join()
+			}
+			function join(){
+				console.error=function(e){console.warn(e)}
+				socket=new WebSocket("ws://localhost:8080/")
+				socket.onopen=function(){
+					console.clear()
+					console.log("Connected!")
+					setTimeout(function(){socket.send("setup")},1)
+				}
+				socket.onclose=function(){
+					console.log("Disconnected:(\nRejoining.")
+					join()
+				}
+				socket.onmessage=function(e){
+					chat.innerHTML={
+						null:function(){
+							return ""
+						},
+						txt:function(dt){
+							return "<div class=\"chat-item msg\"><span class=\"chat-name\">"+dt.substring(dt.split(":")[0].length+1,dt.split(":")[0].length+1+parseInt(dt.split(":")[0]))+"</span>:\t"+dt.substring(dt.split(":")[0].length+1+parseInt(dt.split(":")[0]))+"</div>"
+						},
+						chn:function(dt){
+							return dt.split(":")[0]=="true"?"<div class=\"chat-item chn\"><span class=\"txt\"><span>&nbsp;&nbsp;</span>Successfully changed name to <span class=\"chat-i-name\"><span>&nbsp;</span><span>&nbsp;</span>"+dt.substring(dt.split(":")[0].length+1)+"<span>&nbsp;</span></span><span>&nbsp;&nbsp;</span></span></div>":"<div class=\"chat-item chn\"><span class=\"txt\"><span>&nbsp;&nbsp;</span>Couldn't change name to <span class=\"chat-i-name\"><span>&nbsp;</span>"+dt.substring(dt.split(":")[0].length+1)+"<span>&nbsp;</span></span> (Reason: "+["Name too short","Name too long","Name already exists"][parseInt(dt.split(":")[0])]+")<span>&nbsp;&nbsp;</span></span></div>"
+						},
+						rank:function(dt){
+							return dt.split(":")[0]=="1"?"<div class=\"chat-item rank\">Successfully changed rank to <span class=\"chat-rank\">"+dt.split(":")[1]+"</span></div>":"<div class=\"chat-item rank\">Couldn't change rank to <span class=\"chat-rank\">"+dt.split(":")[1]+"</span> (Your rank: <span class=\"chat-rank\">"+dt.split(":")[2]+"</span>)</div>"
+						},
+						join:function(dt){
+							return "<div class=\"chat-item join\"><span class=\"chat-i-name\"><span>&nbsp;&nbsp;</span>"+dt+"<span>&nbsp;&nbsp;</span></span> joined</div>"
+						},
+						leave:function(dt){
+							return "<div class=\"chat-item leave\"><span class=\"chat-i-name\"><span>&nbsp;&nbsp;</span>"+dt+"<span>&nbsp;&nbsp;</span></span> left</div>"
+						}
+					}[e.data.split(":")[0]](e.data.substring(e.data.split(":")[0].length+1))+chat.innerHTML
+				}
+				socket.onerror=function(e){
+					e.stopImmediatePropagation()
+					e.stopPropagation()
+					e.preventDefault()
+				}
+			}
+			function send(txt){
+				socket.send("txt:"+txt)
+			}
+			function get_admin(passwd){
+				socket.send("admin_req:"+passwd)
+			}
+			function change_name(nm){
+				socket.send("chn:"+nm)
+			}
+			document.addEventListener("DOMContentLoaded",init)
+		</script>
+		<style type="text/css">
+			@import url('https://fonts.googleapis.com/css?family=Montserrat:400,500,600');
+			@import url('https://fonts.googleapis.com/css?family=Lato');
+			body {
+				width: 100%;	
+				height: 100%;
+			}
+			body, body * {
+				margin: 0;
+				padding: 0;
+			}
+			.wr {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+			}
+			.wr .h {
+				position: absolute;
+				width: 100%;
+				height: 100px;
+				top: 0;
+				left: 50%;
+				transform: translate(-50%,0);
+				background: #2f2f2f;
+				box-shadow: 0px 0px 100px 15px rgba(0,0,0,0.75);
+			}
+			.wr .h .h-txt{
+				position: absolute;
+				height: 100px;
+				top: 0;
+				left: 50%;
+				transform: translate(-50%,0);
+				font-size: 45px;
+				font-family: Montserrat;
+				font-weight: 600;
+				line-height: 100px;
+				color: #d3d3d3;
+				user-select: none;
+			}
+			.wr .chat-wr {
+				position: absolute;
+				left: 400px;
+				right: 400px;
+				top: 100px;
+				bottom: 150px;
+				border: solid 5px #101010;
+				border-top: none;
+			}
+			.wr .chat-wr .chat {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				min-width: 500px;
+				height: 100%;
+				background: #252525;
+				display: flex;
+				flex-direction: column-reverse;
+				overflow-y: scroll;
+				overflow-x: hidden;
+			}
+			.wr .chat-wr .chat .chat-item, .wr .chat-wr .chat .chat-item.msg {
+				display: inline-block;
+				width: 100%;
+				min-height: 50px;
+				margin-bottom: 10px;
+				user-select: none;
+			}
+			.wr .chat-wr .chat .chat-item.chn {
+				width: 100%;
+				height: 30px;
+				min-height: 30px;
+				text-align: center;
+				line-height: 30px;
+			}
+			.wr .chat-wr .chat .chat-item.chn .txt {
+				position: absolute;
+				left: 50%;
+				transform: translate(-50%,0);
+				line-height: 30px;
+				font-family: Montserrat;
+				font-weight: 500;
+				font-size: 15px;
+				background: #383838;
+				color: #ebebeb;
+				border-radius: 15px;
+				white-space: nowrap;
+			}
+			.wr .chat-wr .chat .chat-item .chat-name {
+				height: 40px;
+				line-height: 40px;
+				color: red;
+			}
+			.wr .chat-wr .chat .chat-item .chat-i-name {
+				height: 38px;
+				line-height: 38px;
+				font-family: Lato;
+				font-weight: 500;
+				font-size: 16px;
+				color: #e3e3e3;
+				background: #9a9a9a;
+				border-radius: 20px;
+			}
+			.wr .bar-left {
+				position: absolute;
+				top: 100px;
+				bottom: 0;
+				left: 0;
+				width: 400px;
+				background: red;
+			}
+			.wr .bar-right {
+				position: absolute;
+				top: 100px;
+				bottom: 0;
+				right: 0;
+				width: 400px;
+				background: green;
+			}
+			.wr .bar-bottom {
+				position: absolute;
+				bottom: 0;
+				left: 400px;
+				right: 400px;
+				height: 150px;
+				border: solid 5px #101010;
+				border-bottom: none;
+				background: blue;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wr">
+			<div class="chat-wr">
+				<div class="chat">
+				</div>
+			</div>
+			<div class="bar-left">
+			</div>
+			<div class="bar-right">
+			</div>
+			<div class="h">
+				<span class="h-txt">GROUP NAME</span>
+			</div>
+			<div class="bar-bottom">
+			</div>
+		</div>
+	</body>
+</html>
