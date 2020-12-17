@@ -5,7 +5,6 @@ desc=WebSocket-Chat
 public=true
 homepage=
 license=mit
-remote=
 
 file.readme=.\README.md
 file.gitignore=.\.gitignore
