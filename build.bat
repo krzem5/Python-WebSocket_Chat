@@ -1,3 +1,3 @@
 @echo off
 cls
-python src/chatWebSocketServer.py
+python src/main.py
